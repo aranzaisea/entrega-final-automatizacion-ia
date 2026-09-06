@@ -22,7 +22,16 @@ Los tres enlaces son vistas compartidas de Airtable ("Shared View"): de solo lec
 
 ## 3. Estado de los datos al momento de esta entrega
 
-Los 15 registros de demostración de la base fueron generados antes de definir la taxonomía final en español (`category`/`priority`/`status`). Al limpiar las opciones de esos campos para dejar únicamente los valores que el flujo de n8n genera (ver `02_manual_datos.md`), los valores de demostración en inglés quedaron vacíos — es decir, el dashboard muestra actualmente 15 tickets sin clasificar, 0 en estado `Error`. Esto es esperado: el dashboard es una vista **operativa en vivo**, no una foto fija, y se poblará automáticamente con datos reales en cuanto el flujo procese tickets reales a través del webhook. La estructura de KPIs, agrupación y enlaces públicos ya está completamente funcional y verificada.
+El dashboard es una vista **operativa en vivo**, no una foto fija: se actualiza automáticamente con cada ticket que el flujo procesa a través del webhook. Al momento de esta entrega contiene **36 registros**:
+
+- **15 registros de demostración** (los datos semilla originales de la base, previos a la integración con n8n) — agrupados bajo `status` = `(Vacío)`, sin `category`/`priority` porque nunca pasaron por el flujo.
+- **15 registros con `status = Enviado`**: tickets reales disparados vía webhook y procesados de punta a punta por el flujo (clasificación con IA, registro en Airtable y notificación en Slack), incluyendo los cuatro escenarios de evidencia exigidos:
+  - Éxito directo sin aprobación (prioridad `Media`/`Baja`).
+  - Aprobación humana (HITL) con prioridad **Alta** — ticket de Diego Fuentes, aprobado en `#soporte-aprobaciones` y notificado en `#soporte`.
+  - Aprobación humana (HITL) con prioridad **Urgente** — tickets de Sofía Herrera y Mateo Vidal, y de Elena Vargas, aprobados vía el botón "Aprobar" de Slack y notificados con todos los campos (`Cliente`, `Correo`, `Asunto`, `Categoría`, `Prioridad`, `Descripción`) correctamente poblados.
+- **6 registros con `status = Error`**: tickets que dispararon la rama de manejo de errores del flujo, incluyendo un error real de la API de Airtable (`INVALID_VALUE_FOR_COLUMN`, capturado en el campo `error_message`) al enviar un valor con tipo de dato inválido — confirmando que ninguna falla de nodo (Airtable, IA o Slack) detiene el flujo silenciosamente: siempre se registra el error y se notifica al equipo.
+
+Durante esta ronda de pruebas se detectó y corrigió un bug de mapeo en dos nodos de Slack (`Solicitar Aprobación en Slack` y `Notificar Ticket en #soporte`): las expresiones referenciaban `item.json.customer_name` en lugar de `item.json.fields.customer_name` (el nodo de Airtable anida la salida bajo `fields`), lo que dejaba `Cliente`/`Correo`/`Asunto` vacíos en las notificaciones. Ambos nodos fueron corregidos y republicados; las capturas en `evidencia/` muestran el resultado ya corregido.
 
 ## 4. Minimización de datos en los enlaces públicos
 
