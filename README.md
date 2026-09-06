@@ -52,4 +52,11 @@ evidencia/
 
 ## Estado operativo
 
-El flujo está construido, publicado en n8n y fue probado de punta a punta con una ejecución real vía webhook, lo que permitió detectar y corregir errores de configuración. Dos ajustes de cuenta (fuera del alcance de esta automatización, pendientes de la propietaria del proyecto) son necesarios antes de que las 5 ejecuciones de evidencia con datos reales puedan capturarse: habilitar el acceso de la base de Airtable en el token (PAT) usado por n8n, y crear/anular la invitación del bot a los canales de Slack `#soporte` y `#soporte-aprobaciones`. La arquitectura, el manejo de errores y el punto de HITL ya están verificados en el diseño y en las capturas de la ejecución de prueba.
+El flujo está construido, publicado en n8n y fue probado de punta a punta con múltiples ejecuciones reales vía webhook. La evidencia capturada en `evidencia/` y documentada en `docs/05_dashboard_control.md` cubre los cuatro escenarios exigidos:
+
+- **Éxito sin aprobación** (prioridad `Media`/`Baja`): ticket registrado en Airtable, clasificado por IA y notificado en `#soporte` sin intervención humana.
+- **Aprobación humana (HITL) con prioridad Alta**: ticket enviado a `#soporte-aprobaciones`, aprobado con el botón "Aprobar" de Slack, y notificado en `#soporte` con los datos completos.
+- **Aprobación humana (HITL) con prioridad Urgente**: mismo flujo de aprobación para tickets clasificados como urgentes.
+- **Manejo de errores**: un ticket con un valor de dato inválido provocó un error real de la API de Airtable, que el flujo capturó, registró (`error_message`) y notificó al equipo por la rama de error dedicada, sin detenerse silenciosamente.
+
+Durante estas pruebas se detectó y corrigió un bug de mapeo en las notificaciones de Slack (las expresiones no consideraban que la salida del nodo de Airtable anida los campos bajo `fields`), documentado en `docs/05_dashboard_control.md`. La arquitectura, el manejo de errores y el punto de HITL quedan verificados con datos reales, no solo en el diseño.
