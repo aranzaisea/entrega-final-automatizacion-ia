@@ -16,9 +16,9 @@ Entrega final del curso **"Ecosistema de Automatización IA Autónomo para Negoc
 1. Un webhook POST recibe un nuevo ticket (`customer_name`, `customer_email`, `subject`, `description`).
 2. Se crea el registro en Airtable (tabla `Tickets`, vinculada a `Clientes`).
 3. OpenAI clasifica el ticket en `category` y `priority` a partir de la descripción.
-4. Si la prioridad es **Urgente**, el flujo se detiene y espera aprobación humana vía Slack (`sendAndWait`) antes de continuar — este es el punto de Human-in-the-Loop.
+4. Si la prioridad es **Urgente o Alta**, el flujo se detiene y espera aprobación humana vía Slack (`sendAndWait`) antes de continuar — este es el punto de Human-in-the-Loop.
 5. Se notifica al canal de soporte en Slack y se actualiza el estado final del ticket en Airtable.
-6. Cualquier falla en un nodo (Airtable, OpenAI o Slack) se enruta a nodos de error dedicados que registran el fallo y notifican al equipo — el flujo nunca se detiene silenciosamente.
+6. Una falla en la creación del registro en Airtable o en la clasificación por OpenAI se enruta a nodos de error dedicados que registran el fallo en Airtable y notifican al equipo por Slack — el ticket nunca se pierde silenciosamente en estos dos puntos críticos (ver `docs/04_seguridad_resiliencia.md` para el detalle de cobertura).
 
 El diagrama completo está en [`docs/01_diagrama_arquitectura.pdf`](docs/01_diagrama_arquitectura.pdf).
 
