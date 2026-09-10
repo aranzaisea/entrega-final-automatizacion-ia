@@ -331,8 +331,8 @@
         "modelId": {
           "__rl": true,
           "mode": "list",
-          "value": "gpt-5-mini",
-          "cachedResultName": "GPT-5-MINI"
+          "value": "gpt-4o-mini",
+          "cachedResultName": "GPT-4O-MINI"
         },
         "responses": {
           "values": [
@@ -1003,7 +1003,7 @@
           "mode": "name",
           "value": "#soporte-aprobaciones"
         },
-        "message": "=*Ticket crítico requiere aprobación humana*\n\n*Cliente:* {{ $(\"Crear Registro en Airtable\").item.json.customer_name }}\n*Correo:* {{ $(\"Crear Registro en Airtable\").item.json.customer_email }}\n*Asunto:* {{ $(\"Crear Registro en Airtable\").item.json.subject }}\n*Categoría:* {{ $(\"Clasificar Ticket con IA\").item.json.output[0].content[0].text.category }}\n*Prioridad:* {{ $(\"Clasificar Ticket con IA\").item.json.output[0].content[0].text.priority }}\n\n*Descripción:*\n{{ $(\"Crear Registro en Airtable\").item.json.description }}\n\n¿Aprobar el procesamiento de este ticket?",
+        "message": "=*Ticket crítico requiere aprobación humana*\n\n*Cliente:* {{ $(\"Crear Registro en Airtable\").item.json.fields.customer_name }}\n*Correo:* {{ $(\"Crear Registro en Airtable\").item.json.fields.customer_email }}\n*Asunto:* {{ $(\"Crear Registro en Airtable\").item.json.fields.subject }}\n*Categoría:* {{ $(\"Clasificar Ticket con IA\").item.json.output[0].content[0].text.category }}\n*Prioridad:* {{ $(\"Clasificar Ticket con IA\").item.json.output[0].content[0].text.priority }}\n\n*Descripción:*\n{{ $(\"Crear Registro en Airtable\").item.json.fields.description }}\n\n¿Aprobar el procesamiento de este ticket?",
         "approvalOptions": {
           "values": {
             "approveLabel": "Aprobar"
@@ -1324,7 +1324,7 @@
           "value": "#soporte",
           "cachedResultName": "#soporte"
         },
-        "text": "=*Nuevo ticket procesado*\n\n*Cliente:* {{ $(\"Crear Registro en Airtable\").item.json.customer_name }}\n*Correo:* {{ $(\"Crear Registro en Airtable\").item.json.customer_email }}\n*Asunto:* {{ $(\"Crear Registro en Airtable\").item.json.subject }}\n*Categoría:* {{ $(\"Clasificar Ticket con IA\").item.json.output[0].content[0].text.category }}\n*Prioridad:* {{ $(\"Clasificar Ticket con IA\").item.json.output[0].content[0].text.priority }}\n\n*Descripción:*\n{{ $(\"Crear Registro en Airtable\").item.json.description }}",
+        "text": "=*Nuevo ticket procesado*\n\n*Cliente:* {{ $(\"Crear Registro en Airtable\").item.json.fields.customer_name }}\n*Correo:* {{ $(\"Crear Registro en Airtable\").item.json.fields.customer_email }}\n*Asunto:* {{ $(\"Crear Registro en Airtable\").item.json.fields.subject }}\n\n*Categoría:* {{ $(\"Clasificar Ticket con IA\").item.json.output[0].content[0].text.category }}\n*Prioridad:* {{ $(\"Clasificar Ticket con IA\").item.json.output[0].content[0].text.priority }}\n\n*Descripción:*\n{{ $(\"Crear Registro en Airtable\").item.json.fields.description }}",
         "otherOptions": {}
       },
       "id": "d7ee64e6-5c0a-4cfa-adcf-9a7a70009b5a",
