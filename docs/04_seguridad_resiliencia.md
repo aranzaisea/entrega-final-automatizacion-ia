@@ -18,16 +18,17 @@ El principio aplicado en todo el flujo es enviar a cada sistema externo únicame
 
 ## 2. Manejo de errores (resiliencia)
 
-El flujo implementa manejo de errores explícito en **cada** punto de integración externa, no solo en el nodo final. Cada nodo que llama a una API externa (Airtable, OpenAI, Slack) tiene su salida `Error` conectada a una rama dedicada, en vez de dejar que el flujo se detenga silenciosamente:
+El flujo implementa manejo de errores explícito (`onError: continueErrorOutput`) en los **dos puntos de mayor riesgo** de la ejecución: la escritura inicial en la base de datos y la llamada al modelo de IA. En ambos casos, un fallo enruta a una rama de error dedicada en vez de detener el flujo silenciosamente:
 
 | Nodo que puede fallar | Salida de error va a | Acción de recuperación |
 |---|---|---|
 | Crear Registro en Airtable | Notificar Error de Creación (Slack) | Alerta inmediata al equipo — sin registro creado, no hay forma de reintentar automáticamente el guardado, así que se prioriza visibilidad humana rápida |
-| Actualizar: Procesado por IA (tras llamar a OpenAI) | Registrar Error en Airtable | Se actualiza el registro existente con `status: "Error"` y `error_message` con el detalle devuelto por la API, preservando el ticket en vez de perderlo |
-| Solicitar Aprobación en Slack | (mismo patrón: error → registro de error) | Si Slack no responde o el canal no existe, el ticket queda marcado como `Error` en vez de quedar indefinidamente "esperando aprobación" |
-| Notificar Ticket en #soporte | Registrar Error en Airtable | Igual patrón — un fallo de notificación no deja al ticket sin trazabilidad |
+| Clasificar Ticket con IA (llamada a OpenAI) | Registrar Error en Airtable | El ticket ya existe en Airtable (creado en el paso anterior), así que el error se registra actualizando ese mismo registro con `status: "Error"` y `error_message`, en vez de perder el ticket |
+| Actualizar: Procesado por IA (escritura del resultado de la IA) | Registrar Error en Airtable | Mismo patrón — si la escritura del resultado de la IA falla, el ticket se marca como `Error` en vez de quedar en un estado inconsistente |
 
-**Principio de diseño:** ante cualquier falla, el sistema **nunca pierde el dato de origen** — el ticket siempre queda persistido en Airtable con un estado (`Error`) y un mensaje de error explicativo, permitiendo intervención manual posterior sin tener que reconstruir el incidente desde los logs de n8n.
+**Por qué solo estos dos puntos y no los nodos de Slack posteriores:** una vez que el ticket pasó por `Actualizar: Procesado por IA`, ya está persistido en Airtable con `category` y `priority` correctos — el dato de negocio ya no está en riesgo. Los nodos de Slack posteriores (`Solicitar Aprobación en Slack`, `Notificar Ticket en #soporte`) y las actualizaciones de estado que les siguen no tienen una rama de error dedicada en esta versión: si Slack fallara en ese punto, la ejecución se detendría con el ticket ya guardado y clasificado en Airtable (recuperable manualmente), pero sin el registro explícito de `error_message` ni la alerta automática que sí existe para los dos puntos críticos de la tabla. Se documenta esto como una limitación conocida y una mejora pendiente, no como un comportamiento no verificado.
+
+**Principio de diseño:** ante una falla en la creación del registro o en la clasificación por IA — los dos puntos donde se puede perder el dato de origen o dejarlo en un estado inconsistente — el sistema **nunca pierde el ticket**: siempre queda persistido en Airtable con un estado (`Error`) y un mensaje de error explicativo, permitiendo intervención manual posterior sin tener que reconstruir el incidente desde los logs de n8n.
 
 **Casos de falla cubiertos explícitamente:**
 - **Datos faltantes:** si el webhook recibe un payload incompleto (p. ej. sin `description`), el nodo de Airtable de creación falla su validación de campo requerido y enruta a la rama de error en vez de crear un registro corrupto o dejar que el nodo de IA reciba un input vacío.
@@ -38,11 +39,11 @@ El flujo implementa manejo de errores explícito en **cada** punto de integraci�
 
 **Ubicación en el flujo:** entre la clasificación por IA (`¿Prioridad Crítica? (IF)`) y la notificación final al cliente/canal de soporte.
 
-**Condición de activación:** únicamente cuando la IA clasifica el ticket con `priority = "Urgente"`.
+**Condición de activación:** cuando la IA clasifica el ticket con `priority = "Urgente"` **o** `priority = "Alta"` (nodo IF `¿Prioridad Crítica?`, condiciones combinadas con `OR`).
 
 **Mecanismo:** el nodo `Solicitar Aprobación en Slack` usa la función nativa `sendAndWait` de n8n con `Response Type: Approval`. Esto **pausa la ejecución del workflow** (no es un simple mensaje informativo) hasta que una persona del equipo de soporte responde *Aprobar* o *Rechazar* directamente en Slack. El workflow no continúa hacia la actualización de estado ni hacia la notificación al cliente sin esa respuesta humana explícita.
 
-**Por qué este punto y no otro:** un ticket urgente es, por definición, el caso donde un error de clasificación de la IA tiene mayor costo (p. ej. escalar innecesariamente, o no escalar un caso realmente crítico). Se eligió este único punto de control humano — en vez de aprobar cada ticket, lo cual anularía el propósito de automatización — porque concentra la supervisión humana exactamente donde el riesgo es mayor, cumpliendo el requisito de "un punto de validación humana antes de una acción crítica" sin convertir todo el flujo en manual.
+**Por qué este punto y no otro:** un ticket de prioridad Urgente o Alta es, por definición, el caso donde un error de clasificación de la IA tiene mayor costo (p. ej. escalar innecesariamente, o no escalar un caso realmente crítico). Se eligió este único punto de control humano — en vez de aprobar cada ticket, lo cual anularía el propósito de automatización — porque concentra la supervisión humana exactamente donde el riesgo es mayor, cumpliendo el requisito de "un punto de validación humana antes de una acción crítica" sin convertir todo el flujo en manual.
 
 ## 4. Resumen de controles
 
@@ -50,6 +51,6 @@ El flujo implementa manejo de errores explícito en **cada** punto de integraci�
 |---|---|
 | Minimización de datos | Solo `description` va a la IA; sin datos de pago/credenciales en el flujo; credenciales cifradas en el gestor nativo de n8n |
 | Resiliencia ante datos faltantes | Validación de campos requeridos en la creación del registro Airtable + rama de error dedicada |
-| Resiliencia ante fallas de API | `Continue On Fail` + ramas de error en los 4 nodos que llaman a servicios externos (Airtable ×3, OpenAI, Slack ×2) |
-| Trazabilidad de errores | Todo error se persiste en Airtable (`status: Error`, `error_message`) y se notifica por Slack en tiempo real |
-| Human-in-the-loop | Aprobación obligatoria vía Slack (`sendAndWait`) para tickets de prioridad Urgente, antes de notificar al cliente |
+| Resiliencia ante fallas de API | `Continue On Fail` + ramas de error dedicadas en los 2 puntos de mayor riesgo: creación del registro en Airtable y clasificación por OpenAI |
+| Trazabilidad de errores | Los errores capturados se persisten en Airtable (`status: Error`, `error_message`) y se notifican por Slack en tiempo real; los nodos de Slack posteriores al HITL quedan documentados como limitación pendiente (ver sección 2) |
+| Human-in-the-loop | Aprobación obligatoria vía Slack (`sendAndWait`) para tickets de prioridad Urgente **o Alta**, antes de notificar al cliente |

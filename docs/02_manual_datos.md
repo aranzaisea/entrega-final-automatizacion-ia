@@ -138,7 +138,7 @@ Usuario: {{ $json.body.description }}
 
 ### 2.5 n8n → Slack (Solicitud de aprobación — HITL)
 
-Se activa solo si `priority == "Urgente"` (rama `true` del nodo IF). Usa el nodo `sendAndWait` con `Response Type: Approval`.
+Se activa si `priority == "Urgente"` **o** `priority == "Alta"` (rama `true` del nodo IF, condiciones combinadas con `OR`). Usa el nodo `sendAndWait` con `Response Type: Approval`.
 
 ```json
 {
