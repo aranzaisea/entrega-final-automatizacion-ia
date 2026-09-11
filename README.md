@@ -22,6 +22,16 @@ Entrega final del curso **"Ecosistema de Automatización IA Autónomo para Negoc
 
 El diagrama completo está en [`docs/01_diagrama_arquitectura.pdf`](docs/01_diagrama_arquitectura.pdf).
 
+## Video Demo (3 min)
+
+🎥 **[Ver video demo](https://www.loom.com/share/a6f1a0a0e2c54a1c90353fb5c3fad509)** (grabación real, ~1:15 min)
+
+Muestra el flujo funcionando en vivo, sin ninguna credencial ni API key visible en pantalla en ningún momento:
+
+1. **Trigger**: se envía un ticket de prueba real al webhook de n8n mediante `curl`.
+2. **Procesamiento en el orquestador**: la ejecución aparece en la pestaña *Executions* de n8n y se completa exitosamente (clasificación con IA incluida).
+3. **Resultado final**: el ticket queda registrado en Airtable y se notifica en el canal `#soporte` de Slack.
+
 ## Contenido del repositorio
 
 ```
